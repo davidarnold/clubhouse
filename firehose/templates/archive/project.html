@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+
+{% block title %}View Assignments{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span3">
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    {% for client in clients %}
+                        <li class="nav-header">{{ client.name }}</li>
+                        {% for client_project in client.project_set.all %}
+                            <li {% if client_project.id == project.id %}class="active"{% endif %}>
+                                <a href="{% url 'archive-project' client_project.id %}">{{ client_project.name }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="span9">
+            <div class="row-fluid">
+                <h1>{{ project }}</h1>
+                <p class="muted">Your current assignments are highlighted below.</p>
+                {% for deliverable in deliverables %}
+                    <h3 id="nav-deliverable-{{ deliverable.id }}">{{ deliverable.name }}</h3>
+                    {{ deliverable.description|markdown }}
+                    {% if deliverable.tasks %}
+                        <h4>Estimated Work</h4>
+                        <div class="row-fluid">
+                            <div class="span1"></div>
+                            <div class="span1"><strong>Assignee</strong></div>
+                            <div class="span1"><strong>Hours</strong></div>
+                            <div class="span9"><strong>Description</strong></div>
+                        </div>
+                        {% for task in deliverable.tasks %}
+                            <div id="nav-task-{{ task.id }}" data-type="task" class="row-fluid {% if task.is_complete %}complete{% endif %}">
+                                <div class="span1"></div>
+                                <div class="span1"><span>{{ task.assignee|default_if_none:'' }}</span></div>
+                                <div class="span1"><span>{{ task.estimated_hours }}</span></div>
+                                <div class="span9">
+                                    <span>{{ task.description }}</span>
+                                    {% if task.is_complete and task.note %}
+                                        <br/>
+                                        <div class="well well-small">
+                                            {{ task.note|markdown }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    {% if deliverable.issues %}
+                        <h4>Issues</h4>
+                        <div class="{% if not deliverable.issues %}hide{% endif %}" data-type="issues" data-deliverable-id="{{ deliverable.id }}">
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span1"><strong>Reporter</strong></div>
+                                <div class="span1"><strong>Assignee</strong></div>
+                                <div class="span2"><strong>Priority</strong></div>
+                                <div class="span7"><strong>Description</strong></div>
+                            </div>
+                            {% for issue in deliverable.issues %}
+                                {% include 'implementation/_issue_row.html' %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+{% endblock %}

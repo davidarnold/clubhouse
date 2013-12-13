@@ -1,0 +1,58 @@
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load markup %}
+{% load url from future %}
+
+<div id="nav-task-{{ task.id }}" data-type="assignment" data-assignment-id="{{ task.assignment.id }}" class="row-fluid {% if task.is_complete %}complete{% else %}incomplete{% endif %}">
+    <div class="span1">
+        <label class="checkbox">
+            {% if task.is_checkable %}
+                <input type="checkbox" name="is_complete" {% if task.assignment.is_complete %}checked="checked"{% endif %}/>
+            {% endif %}
+        </label>
+    </div>
+    <div class="span1">
+        {% if task.is_releasable %}
+            <button type="button" class="btn btn-small" data-action="release">Release</button>
+        {% else %}
+            <span>{{ task.assignee|default_if_none:'' }}</span>
+        {% endif %}
+    </div>
+    <div class="span1"><span>{{ task.estimated_hours }}</span></div>
+    <div class="span9">
+        <div class="clearfix">
+            <span>{{ task.description }}</span>
+            {# Deprecated #}
+            {% comment %}
+            {% if task.is_complete and not task.note %}
+                <button type="button" class="btn btn-small pull-right assignment-note" data-toggle="modal" data-target="#assignment-note-modal" data-remote="{% url 'implementation-assignment-note' task.assignment.id %}">
+                    <i class="icon-edit"></i> Add Completion Note
+                </button>
+            {% endif %}
+            {% endcomment %}
+        </div>
+        {% if task.is_complete and task.note %}
+            <div class="well well-small">
+                {{ task.note|markdown }}
+            </div>
+        {% endif %}
+    </div>
+</div>

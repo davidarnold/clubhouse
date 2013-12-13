@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+
+{% block title %}Add Assignments{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span3">
+            <div class="row-fluid">
+                <strong class="pull-left" style="line-height: 30px;">Sprint</strong> {{ sprint_selection_form.sprint }}
+            </div>
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    {% for client in clients %}
+                        <li class="nav-header">{{ client.name }}</li>
+                        {% for client_project in client.project_set.all %}
+                            <li {% if client_project.id == project.id %}class="active"{% endif %}>
+                                <a href="{% url 'assignment-current-sprint' client_project.id %}">{{ client_project.name }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="span9">
+            <div class="row-fluid">
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}{{ message.tags }}{% endif %}">
+                        <a href="#" class="button close" data-dismiss="alert">×</a>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+                <form id="main-form" class="form-horizontal" method="post" autocomplete="off">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    <div class="pull-right">
+                        <a id="roll-forward" href="{% url 'assignment-roll-forward' project.id sprint.id %}" class="btn btn-large">Roll Forward</a>
+                        <button type="submit" id="save-button" class="btn btn-success btn-large" data-loading-text="Saving...">Saved</button>
+                    </div>
+                    <h1>{{ project }}</h1>
+                    {% if formset.errors %}
+                        <div class="alert alert-error">
+                            Whoops!  There are some things you'll need to fix before we can save your work.
+                        </div>
+                    {% else %}
+                        <p class="muted">You may assign estimated work to the available people.  Please do not exceed their project capacity for the current sprint.</p>
+                    {% endif %}
+                    {% for deliverable in deliverables %}
+                        <h3>{{ deliverable.name }}</h3>
+                        {{ deliverable.description|markdown }}
+                        {% if deliverable.tasks %}
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="span3">Assignee</th>
+                                    <th class="span1">Hours</th>
+                                    <th class="span8">Description</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for task in deliverable.tasks %}
+                                    {% if task.is_complete %}
+                                        <tr class="complete">
+                                            <td><span>{{ task.assignee|default_if_none:'' }}</span></td>
+                                            <td><span>{{ task.estimated_hours }}</span></td>
+                                            <td><span>{{ task.description }}</span></td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            {% if task.assignment_form %}
+                                                {% include 'assignment/assignment.html' with form=task.assignment_form %}
+                                            {% else %}
+                                                <td>
+                                                    <button type="button" class="assign btn span16" data-task-id="{{ task.id }}">{{ task.work_type_name }}</button>
+                                                </td>
+                                            {% endif %}
+                                            <td data-field="estimated_hours">{{ task.estimated_hours }}</td>
+                                            <td>{{ task.description }}</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% endif %}
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+    <script src="{{ STATIC_URL }}js/app.dirty.js"></script>
+    <script>
+        $(document).ready(function () {
+            var $form = $('#main-form'),
+                isDirty = {% if formset.errors %}true{% else %}false{% endif %},
+                $roll_forward = $('#roll-forward'),
+                annotateHours = function () {
+                    var $this = $(this),
+                        $options = $('select[data-field="worker"] option'),
+                        $selected_options = $options.filter(':selected'),
+                        total_hours = {};
+
+                    $selected_options.each(function () {
+                        var $option = $(this),
+                            worker_id = $option.attr('value'),
+                            hours = parseFloat($option.closest('tr').find('[data-field="estimated_hours"]').text());
+
+                        if (worker_id) {
+                            if (!total_hours.hasOwnProperty(worker_id)) {
+                                total_hours[worker_id] = 0;
+                            }
+                            total_hours[worker_id] += hours;
+                        }
+                    });
+                    $options.each(function () {
+                        var $option = $(this),
+                            worker_id = $option.attr('value'),
+                            worker_name = $option.text().replace(/: .*/, ''),
+                            selected_hours = total_hours.hasOwnProperty(worker_id) ? total_hours[worker_id] : 0;
+
+                        if (worker_id) {
+                            $option.text(worker_name + ': ' + selected_hours.toFixed(2));
+                        } else {
+                            $option.text(worker_name);
+                        }
+                    });
+                };
+
+            $form.dirty('#save-button', isDirty);
+
+            $roll_forward.click(function () {
+                $roll_forward.attr('disabled', 'disabled');
+            })
+
+            $('select[name="sprint"]').on('change', function () {
+                var $select = $(this),
+                    url = '{% url "assignment-assignments" project.id 1234|escapejs %}'.replace('1234', $select.val());
+
+                window.location = url;
+            })
+
+            annotateHours();
+            $form.on('change', 'select[data-field="worker"]', annotateHours);
+            $form.on('change', 'select[data-field="worker"]', function () {
+                var $select = $(this),
+                    $delete = $select.closest('tr').find('[data-field="delete"]');
+
+                $delete.val(!$select.val());
+            });
+
+            $form.on('click', 'button.assign', function () {
+                var $button = $(this),
+                    $container = $button.closest('td'),
+                    task_id = $button.data('taskId'),
+                    sprint_id = '{{ sprint.id|escapejs }}';
+
+                $button.attr('disabled', 'disabled');
+                $.ajax({
+                    url: '{% url "assignment-empty_assignment" 1234|escapejs %}'.replace('1234', task_id),
+                    type: 'GET',
+                    dataType:'html',
+                    success:function (data) {
+                        var assignmentCount = $('[data-type="assignment"]').length,
+                            $html = $(data.replace(/__prefix__/g, assignmentCount)),
+                            $total_forms =  $('input[name="form-TOTAL_FORMS"]');
+
+                        $html.find('[data-field="sprint"]').val(sprint_id);
+                        $html.find('[data-field="task"]').val(task_id);
+                        $container.replaceWith($html);
+                        $total_forms.val(assignmentCount + 1);
+                        annotateHours();
+                    }
+                });
+            })
+        });
+    </script>
+{% endblock %}

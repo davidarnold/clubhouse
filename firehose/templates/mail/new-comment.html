@@ -1,0 +1,40 @@
+{% extends 'mail-base.html' %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+
+{% block body %}
+    <h3>{{ comment.issue.deliverable.project }}</h3>
+    <div>{{ comment.creator.get_full_name }} left a comment on an issue you're involved with.</div>
+    <hr/>
+    <h4>{{ comment.issue.deliverable.name }}</h4>
+    <div><strong>{{ comment.issue.get_priority_display }}:</strong> {{ comment.issue.description|markdown }}</div>
+    <hr/>
+    <div><strong>Comment:</strong> {{ comment.body|markdown }}</div>
+    <hr/>
+{% endblock %}
+
+{% block button %}
+    <a href="{{ BASE_URL }}{% url 'implementation-assignments' comment.issue.deliverable.project.id %}#nav-issue-{{ comment.issue.id }}">
+        View issue and full comment thread
+    </a>
+{% endblock %}

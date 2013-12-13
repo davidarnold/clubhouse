@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+
+{% block title %}Add Estimates{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span3">
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    {% for client in clients %}
+                        <li class="nav-header">{{ client.name }}</li>
+                        {% for client_project in client.project_set.all %}
+                            <li {% if client_project.id == project.id %}class="active"{% endif %}>
+                                <a href="{% url 'tasks' client_project.id %}">{{ client_project.name }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="span9">
+            <div class="row-fluid">
+                <form id="main-form" class="form-horizontal" method="post" autocomplete="off">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    <div class="pull-right">
+                        <button type="submit" id="save-button" class="btn btn-success btn-large" data-loading-text="Saving...">Saved</button>
+                    </div>
+                    <h1>{{ project }}</h1>
+                    {% if formset.errors %}
+                        <div class="alert alert-error">
+                            Whoops!  There are some things you'll need to fix before we can save your work.
+                        </div>
+                    {% else %}
+                        <p class="muted">You can add, edit, remove and reorder estimates below.</p>
+                    {% endif %}
+                    {% for deliverable in deliverables %}
+                        <h3>{{ deliverable.name }}</h3>
+                        {{ deliverable.description|markdown }}
+                        {% if deliverable.tasks %}
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="span3">Assignee</th>
+                                    <th class="span1">Hours</th>
+                                    <th class="span8">Description</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for task in deliverable.tasks %}
+                                    <tr {% if task.is_complete %}class="complete"{% endif %}>
+                                        <td><span>{{ task.assignee|default_if_none:'' }}</span></td>
+                                        <td><span>{{ task.estimated_hours }}</span></td>
+                                        <td><span>{{ task.description }}</span></td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% endif %}
+                        {% for form in deliverable.task_forms %}
+                            {% include 'tasking/task.html' %}
+                        {% endfor %}
+                        <div>
+                            {% include 'tasking/add-item.html' %}
+                        </div>
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+    <script src="{{ STATIC_URL }}js/app.dirty.js"></script>
+    <script>
+        $(document).ready(function () {
+            var $form = $('#main-form'),
+                isDirty = {% if formset.errors %}true{% else %}false{% endif %},
+                move = function ($div, $other_div, callback) {
+                    var $position = $div.position(),
+                        $other_position = $other_div.position();
+
+                    $div.css({
+                        position:'relative'
+                    }).animate({
+                        top:$other_position.top - $position.top,
+                        left:$other_position.left - $position.left
+                    }, {
+                        complete:function () {
+                            $(this).css({
+                                position:'static',
+                                top:0,
+                                left:0
+                            })
+                            callback();
+                        }
+                    });
+                },
+                swap = function ($div, $other_div) {
+                    var call_count = 0,
+                        sync = function () {
+                            call_count += 1;
+
+                            if (call_count === 2) {
+                                $div.insertBefore($other_div);
+                            }
+                        };
+
+                    move($div, $other_div, sync);
+                    move($other_div, $div, sync);
+                };
+
+            $form.dirty('#save-button', isDirty);
+
+            $form.on('click', 'div.add-item button', function () {
+                var $button = $(this),
+                    $container = $button.closest('div.add-item').parent(),
+                    deliverable_id = $button.data('deliverableId');
+
+                $.ajax({
+                    url: '{% url "empty_task" %}',
+                    type: 'GET',
+                    dataType:'html',
+                    success:function (data) {
+                        var taskCount = $('div[data-type="task"]').length,
+                            $html = $(data.replace(/__prefix__/g, taskCount)),
+                            $total_forms =  $('input[name="form-TOTAL_FORMS"]');
+
+                        $html.find('input.deliverable').val(deliverable_id);
+                        $html.find('button[data-deliverable-id]').data('deliverableId', deliverable_id);
+                        $html.css({ display: 'none' }).insertBefore($container).slideDown();
+                        $total_forms.val(taskCount + 1);
+                    }
+                });
+            }).on('click', '[data-action="move-up"]', function () {
+                var $button = $(this),
+                    $div = $button.closest('div[data-type="task"]'),
+                    $other_div = $div.prev('div[data-type="task"]');
+
+                if ($other_div.length === 1) {
+                    swap($div, $other_div);
+                }
+            }).on('click', '[data-action="move-down"]', function () {
+                var $button = $(this),
+                    $div = $button.closest('div[data-type="task"]'),
+                    $other_div = $div.next('div[data-type="task"]');
+
+                if ($other_div.length === 1) {
+                    swap($other_div, $div);
+                }
+            }).on('click', '[data-action="delete"]', function () {
+                var $button = $(this),
+                    $div = $button.closest('div[data-type="task"]'),
+                    $delete_field = $div.find('input[data-field="delete"]');
+
+                $div.slideUp();
+                $delete_field.val(1);
+            }).submit(function () {
+                var task_order_offset = {{ task_order_offset }};
+
+                $form.find('input[data-field="order"]').each(function (index) {
+                    var $input = $(this);
+
+                    $input.val(task_order_offset + index);
+                });
+            });
+        });
+    </script>
+{% endblock %}

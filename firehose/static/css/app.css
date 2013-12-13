@@ -1,0 +1,106 @@
+/*
+ * The contents of this file are subject to the terms of the
+ * Common Development and Distribution License (the "License").
+ * You may not use this file except in compliance with the License.
+ *
+ * You can obtain a copy of the License in the included LICENSE.txt
+ * or http://opensource.org/licenses/CDDL-1.0
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ *
+ * When modifying Covered Code, update the affected files' copyright
+ * notice with the current year and add your name to its contributors
+ * list.
+ *
+ * Copyright 2012-2013 Clubhouse Contributors
+ *
+ * File contributors: David Arnold
+ */
+/* TODO: remove with Bootstrap 2.3 */
+.text-right {
+    text-align: right;
+}
+
+/* django-crispy-forms */
+.asteriskField {
+    display: none;
+}
+
+.sidebar-nav {
+    padding: 9px 0;
+}
+
+textarea {
+    width: 100%;
+    height: 60px;
+    box-sizing: border-box;
+}
+
+.alert, .well, .table {
+    margin-bottom: 4px;
+}
+
+.complete span {
+    text-decoration: line-through;
+    color: #999 !important;
+}
+
+.incomplete {
+    background-color: #fcf8e3;
+}
+
+.row-fluid[data-type="assignment"] {
+    border-top: #eee solid 1px;
+    padding-top: 4px;
+}
+
+.row-fluid[data-type="task"] {
+    border-top: #eee solid 1px;
+    padding-top: 4px;
+}
+
+.row-fluid[data-type="issue"] {
+    border-top: #eee solid 1px;
+    padding-top: 4px;
+}
+
+div[data-type="issue-comment"] {
+    border-top: #eee solid 1px;
+    padding-top: 5px;
+}
+
+button.issue-comment {
+    margin-top: -32px;
+}
+
+button.assignment-note {
+    margin-bottom: 4px;
+}
+
+.add-item button {
+    margin: 5px 0;
+}
+
+.add-issue button {
+    margin: 5px 0;
+}
+
+hr {
+    margin: 17px 0;
+}
+
+button[data-action="expand"] {
+    margin-top: -3px;
+}
+
+[data-type="expand-container"] {
+    display: none;
+}
+
+#main-col a {
+    color: #333333;
+}
+
+.btn-toolbar {
+    margin: 0;
+}

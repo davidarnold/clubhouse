@@ -1,0 +1,86 @@
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+<div class="row-fluid" id="nav-issue-{{ issue.id }}" data-type="issue" data-issue-id="{{ issue.id }}">
+    <div class="span1">
+        {% if issue.is_checkable %}
+            <input type="checkbox"{% if issue.is_checked %} checked="checked"{% endif %}/>
+        {% endif %}
+    </div>
+    <div class="span1">
+        {{ issue.reporter }}
+    </div>
+    <div class="span1">
+        {% if issue.is_claimable %}
+            <button type="button" class="btn btn-small" data-action="claim">Claim</button>
+        {% elif issue.is_releasable %}
+            <button type="button" class="btn btn-small" data-action="release">Release</button>
+        {% else %}
+            {{ issue.assignee|default_if_none:'' }}
+        {% endif %}
+    </div>
+    <div class="span2">
+        {% if issue.is_verified %}
+            <span class="label">
+        {% elif issue.is_resolved %}
+            <span class="label label-success">
+        {% elif issue.priority == Issue.BLOCKER_PRIORITY %}
+            <span class="label label-important">
+        {% elif issue.priority == Issue.BUG_PRIORITY or issue.priority == Issue.TODO_PRIORITY or issue.priority == Issue.CHANGE_PRIORITY %}
+            <span class="label label-warning">
+        {% elif issue.priority == Issue.ENHANCEMENT_PRIORITY %}
+            <span class="label label-info">
+        {% elif issue.priority == Issue.INFORMATION_PRIORITY %}
+            <span class="label label-inverse">
+        {% else %}
+            <span class="label">
+        {% endif %}
+        {% if issue.is_verified %}
+            Verified
+        {% elif issue.is_resolved %}
+            Resolved
+        {% else %}
+            {{ issue.get_priority_display }}
+        {% endif %}
+        </span>
+        {% if issue.can_reopen %}
+            <button type="button" class="btn btn-small" data-action="reopen">Reopen</button>
+        {% endif %}
+    </div>
+    <div class="span7">
+        {{ issue.description|markdown }}
+        <p class="muted"><strong>{{ issue.reporter.get_full_name }}</strong>&emsp;{{ issue.created }}</p>
+        <div data-type="issue-comments" data-issue-id="{{ issue.id }}">
+            {% for comment in issue.comments %}
+                <div data-type="issue-comment" data-issue-comment-id="{{ comment.id }}">
+                    {{ comment.body|markdown }}
+                    <p class="muted"><strong>{{ comment.creator.get_full_name }}</strong>&emsp;{{ comment.updated }}</p>
+                </div>
+            {% endfor %}
+        </div>
+        {% if issue.can_comment %}
+            <button type="button" class="btn btn-small pull-right issue-comment" data-issue-id="{{ issue.id }}" data-toggle="modal" data-target="#issue-comment-modal" data-remote="{% url 'implementation-issue-comment' issue.id %}">
+                <i class="icon-comment"></i> Add a Comment
+            </button>
+        {% endif %}
+    </div>
+</div>

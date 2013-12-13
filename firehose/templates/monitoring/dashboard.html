@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+
+{% block title %}View Assignments{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span3">
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    {% for client in clients %}
+                        <li class="nav-header">{{ client.name }}</li>
+                        {% for client_project in client.project_set.all %}
+                            <li {% if client_project.id == project.id %}class="active"{% endif %}>
+                                <a href="{% url 'monitoring-dashboard' client_project.id %}">
+                                    {% if client_project.unclaimed_issue_count %}
+                                        <span class="badge badge-important">{{ client_project.unclaimed_issue_count }}</span>&ensp;
+                                    {% endif %}
+                                    {{ client_project.name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div id="main-col" class="span9">
+            <div class="row-fluid">
+                {% if is_subscribed %}
+                    <form method="post" action="{% url 'monitoring-unsubscribe' project.id %}" autocomplete="off">
+                        <div class="pull-right">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-large" data-loading-text="Unsubscribing...">Unsubscribe</button>
+                        </div>
+                        <h1>{{ project }}</h1>
+                    </form>
+                {% else %}
+                    <form method="post" action="{% url 'monitoring-subscribe' project.id %}" autocomplete="off">
+                        <div class="pull-right">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-large" data-loading-text="Subscribing...">Subscribe</button>
+                        </div>
+                        <h1>{{ project }}</h1>
+                    </form>
+                {% endif %}
+                <p class="muted">Overall, sprint, and deliverable progress are displayed below.</p>
+                <h2>Open Issues</h2>
+                {% for deliverable in deliverable_issues %}
+                    <h3><a href="{% url 'implementation-assignments' project.id %}#nav-deliverable-{{ deliverable.id }}">{{ deliverable.name }}</a></h3>
+                    <div class="{% if not deliverable.issues %}hide{% endif %}" data-type="issues" data-deliverable-id="{{ deliverable.id }}">
+                        <div class="row-fluid">
+                            <div class="span1"></div>
+                            <div class="span1"><strong>Reporter</strong></div>
+                            <div class="span1"><strong>Assignee</strong></div>
+                            <div class="span2"><strong>Priority</strong></div>
+                            <div class="span7"><strong>Description</strong></div>
+                        </div>
+                        {% for issue in deliverable.issues %}
+                            {% include 'implementation/_issue_row.html' %}
+                        {% endfor %}
+                    </div>
+                {% empty %}
+                    <p>There are no open issues currently.</p>
+                {% endfor %}
+                <h2>Overall Progress</h2>
+                <div class="row-fluid">
+                    <div class="span9">
+                        <div class="progress progress-success">
+                            <div class="bar" style="width: {{ overall_progress.percent }}%;">
+                                {% if overall_progress.complete_hours != 0 %}
+                                    {{ overall_progress.complete_hours }} hours complete
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="span3">
+                        {{ overall_progress.total_hours }} hours total
+                        <button type="button" class="btn btn-small pull-right" data-action="expand">&#x22EF;</button>
+                    </div>
+                </div>
+                <div data-type="expand-container">
+                    {% for work_type, progress in overall_progress.breakdown %}
+                        <div class="row-fluid">
+                            <div class="span2">
+                                {{ work_type }}
+                            </div>
+                            <div class="span7">
+                                <div class="progress progress-success">
+                                    <div class="bar" style="width: {{ progress.percent }}%;">
+                                        {% if progress.complete_hours != 0 %}
+                                            {{ progress.complete_hours }} hours complete
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="span3">
+                                {{ progress.total_hours }} hours
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <h2>Sprint Progress</h2>
+                {% for sprint in sprint_progress %}
+                    <div class="row-fluid">
+                        <div class="span3">{{ sprint.name }}</div>
+                        <div class="span6">
+                            <div class="progress progress-success">
+                                <div class="bar" style="width: {{ sprint.percent }}%;">
+                                    {% if sprint.complete_hours != 0 %}
+                                        {{ sprint.complete_hours }} hours complete
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="span3">
+                            {{ sprint.total_hours }} hours total
+                            <button type="button" class="btn btn-small pull-right" data-action="expand">&#x22EF;</button>
+                        </div>
+                    </div>
+                    <div data-type="expand-container">
+                        {% for worker, progress in sprint.breakdown %}
+                            <div class="row-fluid">
+                                <div class="span3 text-right">
+                                    {{ worker.user.get_full_name }}
+                                </div>
+                                <div class="span6">
+                                    <div class="progress progress-success">
+                                        <div class="bar" style="width: {{ progress.percent }}%;">
+                                            {% if progress.complete_hours != 0 %}
+                                                {{ progress.complete_hours }} hours complete
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="span3">
+                                    {{ progress.total_hours }} hours
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% empty %}
+                    <p>There are no assigned sprints yet.</p>
+                {% endfor %}
+                <h2>Deliverable Progress</h2>
+                {% for deliverable in deliverable_progress %}
+                    <div class="row-fluid">
+                        <div class="span5">
+                            <a href="{% url 'implementation-assignments' project.id %}#nav-deliverable-{{ deliverable.id }}">{{ deliverable.name }}</a>
+                        </div>
+                        <div class="span4">
+                            <div class="progress progress-success">
+                                <div class="bar" style="width: {{ deliverable.percent }}%;">
+                                    {% if deliverable.complete_hours != 0 %}
+                                        {{ deliverable.complete_hours }} hours complete
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="span3">
+                            {{ deliverable.total_hours }} hours total
+                            <button type="button" class="btn btn-small pull-right" data-action="expand">&#x22EF;</button>
+                        </div>
+                    </div>
+                    <div data-type="expand-container">
+                        {% for task in deliverable.tasks %}
+                            <a href="{% url 'implementation-assignments' project.id %}#nav-task-{{ task.id }}">
+                                <div class="row-fluid {% if task.is_complete %}complete{% endif %}">
+                                    <div class="span2 offset1 text-right"><span>{{ task.assignee.user.get_full_name|default_if_none:'' }}</span></div>
+                                    <div class="span6"><span>{{ task.description }}</span></div>
+                                    <div class="span3"><span>{{ task.estimated_hours }} hours</span></div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% include 'implementation/_issue_comment_modal.html' %}
+{% endblock %}
+
+{% block extra_script %}
+    <script src="{{ STATIC_URL }}js/app.issues.js"></script>
+    <script src="{{ STATIC_URL }}js/app.expand.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('button[type="submit"]').click(function () {
+                $(this).button('loading');
+            });
+        });
+    </script>
+{% endblock %}

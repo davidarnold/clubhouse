@@ -1,0 +1,95 @@
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Clubhouse - {% block title %}{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <link href="{{ STATIC_URL }}css/bootstrap.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link href="{{ STATIC_URL }}css/app.css" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <a class="brand" href="/">Clubhouse</a>
+            {% if user.is_authenticated %}
+                <ul class="nav">
+                    {% if 'analyst' in groups %}
+                        <li><a href="{% url 'analysis-index' %}">Analysis</a></li>
+                    {% endif %}
+                    {% if 'manager' in groups %}
+                        <li><a href="{% url 'tasking-index' %}">Estimation</a></li>
+                        <li><a href="{% url 'assignment-index' %}">Assignment</a></li>
+                    {% endif %}
+                    {% if 'worker' in groups %}
+                        <li><a href="{% url 'implementation-index' %}">Implementation</a></li>
+                    {% endif %}
+                    {% if 'manager' in groups or 'worker' in groups %}
+                        <li><a href="{% url 'monitoring-index' %}">Monitoring</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'archive-index' %}">Archive</a></li>
+                </ul>
+                <ul class="nav pull-right">
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% block content %}{% endblock %}
+    <hr>
+    <footer>
+        <p>&copy; Clubhouse Contributors 2012</p>
+    </footer>
+</div>
+
+<script src="{{ STATIC_URL }}js/jquery-1.8.2.min.js"></script>
+<script src="{{ STATIC_URL }}js/jquery.autosize-min.js"></script>
+<script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+
+{# URLs #}
+<script>
+    window.IMPLEMENTATION_ASSIGNMENT_CHECKED_URL = '{% url "implementation-assignment-checked" %}';
+    window.IMPLEMENTATION_ASSIGNMENT_RELEASE_URL = '{% url "implementation-assignment-release" %}';
+    window.IMPLEMENTATION_TASK_CLAIM_URL = '{% url "implementation-task-claim" %}';
+    window.IMPLEMENTATION_ISSUE_CHECKED_URL = '{% url "implementation-issue-checked" %}';
+    window.IMPLEMENTATION_ISSUE_ACTION_URL = '{% url "implementation-issue-action" %}';
+</script>
+
+{% block extra_script %}{% endblock %}
+
+</body>
+</html>

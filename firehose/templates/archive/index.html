@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+
+{% block title %}Archive{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span3">
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    {% for client in clients %}
+                        <li class="nav-header">{{ client.name }}</li>
+                        {% for client_project in client.project_set.all %}
+                            <li>
+                                <a href="{% url 'archive-project' client_project.id %}">{{ client_project.name }}</a>
+                            </li>
+                        {% endfor %}
+                    {% empty %}
+                        <li class="nav-header">No available projects</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="span9">
+            <div class="row-fluid">
+                <h1>Project Archive</h1>
+                <p class="muted">Choose a project to begin.</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+{% endblock %}

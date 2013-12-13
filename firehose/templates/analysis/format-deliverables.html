@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+
+{% block title %}Deliverables{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span12">
+            <div class="row-fluid">
+                    <h1>{{ project }}</h1>
+                    {% for deliverable in deliverables %}
+                        <h3>{{ deliverable.name }}</h3>
+                        {{ deliverable.description|markdown }}
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+    <script>
+        $(document).ready(function () {
+        });
+    </script>
+{% endblock %}

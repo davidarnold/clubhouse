@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+{% load markup %}
+
+{% block title %}View Assignments{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span3">
+            <div class="row-fluid">
+                <strong class="pull-left" style="line-height: 30px;">View</strong>
+                <select data-action="filter" data-filter-selector="[data-type='deliverable']" class="pull-right">
+                    <option value="">All Deliverables</option>
+                    <option value="mine">My Deliverables</option>
+                    <option value="incomplete">Incomplete Deliverables</option>
+                    <option disabled="disabled">--------</option>
+                    {% for deliverable in deliverables %}
+                        <option value="deliverable-{{ deliverable.id }}">{{ deliverable.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    {% for client in clients %}
+                        <li class="nav-header">{{ client.name }}</li>
+                        {% for client_project in client.project_set.all %}
+                            <li {% if client_project.id == project.id %}class="active"{% endif %}>
+                                <a href="{% url 'implementation-assignments' client_project.id %}">{{ client_project.name }}</a>
+                            </li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="span9">
+            <div class="row-fluid">
+                <h1>{{ project }}</h1>
+                <p class="muted">Your current assignments are highlighted below.</p>
+                {% for deliverable in deliverables %}
+                    <div data-type="deliverable" data-filter-tags="{{ deliverable.tags|join:' ' }}">
+                        <h3 id="nav-deliverable-{{ deliverable.id }}">{{ deliverable.name }}</h3>
+                        {{ deliverable.description|markdown }}
+                        <h4>Estimated Work</h4>
+                        <div class="{% if not deliverable.tasks %}hide{% endif %}" data-type="tasks" data-deliverable-id="{{ deliverable.id }}">
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span1"><strong>Assignee</strong></div>
+                                <div class="span1"><strong>Hours</strong></div>
+                                <div class="span9"><strong>Description</strong></div>
+                            </div>
+                            {% for task in deliverable.tasks %}
+                                {% if task.assignment %}
+                                    {% include 'implementation/_assignment.html' %}
+                                {% else %}
+                                    {% include 'implementation/_task_row.html' %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="row-fluid add-item">
+                            <button type="button" class="btn btn-small pull-left" data-deliverable-id="{{ deliverable.id }}" data-toggle="modal" data-target="#task-modal" data-remote="{% url 'implementation-task' deliverable.id %}"><i class="icon-plus"></i> Add a new estimate</button>
+                            <hr/>
+                        </div>
+                        <h4>Issues</h4>
+                        <div class="{% if not deliverable.issues %}hide{% endif %}" data-type="issues" data-deliverable-id="{{ deliverable.id }}">
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span1"><strong>Reporter</strong></div>
+                                <div class="span1"><strong>Assignee</strong></div>
+                                <div class="span2"><strong>Priority</strong></div>
+                                <div class="span7"><strong>Description</strong></div>
+                            </div>
+                            {% for issue in deliverable.issues %}
+                                {% include 'implementation/_issue_row.html' %}
+                            {% endfor %}
+                        </div>
+                        <div class="row-fluid add-issue">
+                            <button type="button" class="btn btn-small pull-left" data-deliverable-id="{{ deliverable.id }}" data-toggle="modal" data-target="#issue-modal" data-remote="{% url 'implementation-issue' deliverable.id %}"><i class="icon-plus"></i> Add a new issue</button>
+                            <hr/>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div id="issue-modal" class="modal hide fade">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h3>Add a Deliverable Issue</h3>
+        </div>
+        <div class="modal-body">
+            Loading ...
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" data-action="cancel">Cancel</a>
+            <a href="#" class="btn btn-primary" data-action="submit">Save</a>
+        </div>
+    </div>
+    <div id="task-modal" class="modal hide fade">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h3>Add an Estimate</h3>
+        </div>
+        <div class="modal-body">
+            Loading ...
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" data-action="cancel">Cancel</a>
+            <a href="#" class="btn btn-primary" data-action="submit">Save</a>
+        </div>
+    </div>
+    {% include 'implementation/_assignment_note_modal.html' %}
+    {% include 'implementation/_issue_comment_modal.html' %}
+{% endblock %}
+
+{% block extra_script %}
+    <script src="{{ STATIC_URL }}js/app.issues.js"></script>
+    <script src="{{ STATIC_URL }}js/app.assignments.js"></script>
+    <script src="{{ STATIC_URL }}js/app.filter.js"></script>
+    <script src="{{ STATIC_URL }}js/app.tasks.js"></script>
+{% endblock %}

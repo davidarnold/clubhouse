@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% comment %}
+
+  The contents of this file are subject to the terms of the
+  Common Development and Distribution License (the "License").
+  You may not use this file except in compliance with the License.
+
+  You can obtain a copy of the License in the included LICENSE.txt
+  or http://opensource.org/licenses/CDDL-1.0
+  See the License for the specific language governing permissions
+  and limitations under the License.
+
+  When modifying Covered Code, update the affected files' copyright
+  notice with the current year and add your name to its contributors
+  list.
+
+  Copyright 2012-2013 Clubhouse Contributors
+
+  File contributors: David Arnold
+
+{% endcomment %}
+{% load url from future %}
+
+{% block title %}View Assignments{% endblock %}
+
+{% block extra_head %}
+    <style type="text/css">
+        .incomplete {
+            background: white;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid">
+        <div class="span3">
+            <div class="row-fluid">
+                <strong class="pull-left" style="line-height: 30px;">View</strong> {{ worker_selection_form.worker }}
+            </div>
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    {% for client in clients %}
+                        <li class="nav-header">{{ client.name }}</li>
+                        {% for client_project in client.project_set.all %}
+                            <li>
+                                <a href="{% url 'implementation-assignments' client_project.id %}">{{ client_project.name }}</a>
+                            </li>
+                        {% endfor %}
+                    {% empty %}
+                        <li class="nav-header">No available projects</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div id="main-col" class="span9">
+            <div class="row-fluid">
+                <h1>{{ worker_name }}'s Sprint Summary <small class="pull-right" style="line-height:50px;">{{ current_sprint }}</small></h1>
+                <p class="muted">{{ worker_name }}'s assigned projects and hours are listed below.</p>
+                {% if projects %}
+                    {% for project in projects %}
+                        <hr/>
+                        <h2><a href="{% url 'implementation-assignments' project.id %}">{{ project.name }}</a></h2>
+                        <div>
+                            {% for deliverable in project.deliverables %}
+                                <h3><a href="{% url 'implementation-assignments' project.id %}#nav-deliverable-{{ deliverable.id }}">{{ deliverable.name }}</a></h3>
+                                {% if deliverable.tasks %}
+                                    <h4>Estimated Work</h4>
+                                    <div class="row-fluid">
+                                        <div class="span1"></div>
+                                        <div class="span1"><strong>Assignee</strong></div>
+                                        <div class="span1"><strong>Hours</strong></div>
+                                        <div class="span9"><strong>Description</strong></div>
+                                    </div>
+                                    {% for task in deliverable.tasks %}
+                                        {% if task.assignment %}
+                                            {% include 'implementation/_assignment.html' %}
+                                        {% else %}
+                                            {% include 'implementation/_task_row.html' %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                {% if deliverable.issues %}
+                                    <h4>Issues</h4>
+                                    <div data-type="issues" data-deliverable-id="{{ deliverable.id }}">
+                                        <div class="row-fluid">
+                                            <div class="span1"></div>
+                                            <div class="span1"><strong>Reporter</strong></div>
+                                            <div class="span1"><strong>Assignee</strong></div>
+                                            <div class="span2"><strong>Priority</strong></div>
+                                            <div class="span7"><strong>Description</strong></div>
+                                        </div>
+                                        {% for issue in deliverable.issues %}
+                                            {% include 'implementation/_issue_row.html' %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <hr/>
+                    No incomplete estimated work or issues are currently assigned to {{ worker_name }} in this sprint.
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% include 'implementation/_assignment_note_modal.html' %}
+    {% include 'implementation/_issue_comment_modal.html' %}
+{% endblock %}
+
+{% block extra_script %}
+    <script src="{{ STATIC_URL }}js/app.issues.js"></script>
+    <script src="{{ STATIC_URL }}js/app.assignments.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('select[name="worker"]').on('change', function () {
+                var $select = $(this),
+                    url = '{% url "implementation-summary" 1234|escapejs %}'.replace('1234', $select.val());
+
+                window.location = url;
+            })
+        });
+    </script>
+{% endblock %}
