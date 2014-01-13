@@ -69,6 +69,12 @@
 </div>
 
 <div class="container-fluid">
+    {% for message in messages %}
+        <div class="alert {% if message.tags %}{{ message.tags }}{% endif %}">
+            <a href="#" class="button close" data-dismiss="alert">×</a>
+            {{ message }}
+        </div>
+    {% endfor %}
     {% block content %}{% endblock %}
     <hr>
     <footer>
