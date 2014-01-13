@@ -186,6 +186,91 @@ def assignments(request, project_id):
     return render(request, 'implementation/assignments.html', context)
 
 @login_required
+@require_http_methods(['GET'])
+def project(request, project_id):
+    worker_id = request.user.worker.id
+    sprint = Sprint.current()
+
+    project = get_object_or_404(Project, pk=project_id)
+    if project.phase != Project.IMPLEMENTATION_PHASE:
+        return HttpResponseRedirect(reverse('hacker'))
+
+    tasks = [task for deliverable in project.deliverable_set.all() for task in deliverable.task_set.all()]
+    assignments = Assignment.objects.filter(sprint_id=sprint.id, worker_id=worker_id, task_id__in=tasks)
+
+    def get_assignment(task):
+        matches = [assignment for assignment in assignments if assignment.task == task]
+        return matches[0] if matches else None
+
+    def get_tags(deliverable):
+        tags = []
+        tags.append('deliverable-' + str(deliverable.id))
+        # TODO: add "mine" tag based on issues as well
+        if any(1 for task in deliverable.task_set.all() if get_assignment(task)):
+            tags.append('mine')
+        if any(1 for task in deliverable.task_set.all() if not task.is_complete):
+            tags.append('incomplete')
+        return tags
+
+    context = {
+        'Issue': Issue,
+        'project': project,
+        'is_subscribed': ProjectSubscription.objects.filter(project=project, subscriber=request.user).exists(),
+        'deliverables': [
+            {
+                'id': deliverable.id,
+                'name': deliverable.name,
+                'tasks': [
+                    task_to_dict(task, get_assignment(task), request.user)
+                    for task in deliverable.task_set.order_by('order')
+                    if not task.is_complete
+                ],
+                'issues': [
+                    issue_to_dict(issue, request.user)
+                    for issue in deliverable.issue_set.order_by('created')
+                    if issue.is_verified == False and issue.priority != Issue.INFORMATION_PRIORITY
+                ],
+                'tags': get_tags(deliverable),
+            } for deliverable in project.deliverable_set.order_by('order')
+        ],
+    }
+
+    return render(request, 'implementation/project.html', context)
+
+@login_required
+@require_http_methods(['GET'])
+def project_deliverable(request, project_id, deliverable_id):
+    worker_id = request.user.worker.id
+    sprint = Sprint.current()
+
+    project = get_object_or_404(Project, pk=project_id)
+    if project.phase != Project.IMPLEMENTATION_PHASE:
+        return HttpResponseRedirect(reverse('hacker'))
+
+    deliverable = get_object_or_404(Deliverable, pk=deliverable_id)
+
+    tasks = [task for task in deliverable.task_set.all()]
+    assignments = Assignment.objects.filter(sprint_id=sprint.id, worker_id=worker_id, task_id__in=tasks)
+
+    def get_assignment(task):
+        matches = [assignment for assignment in assignments if assignment.task == task]
+        return matches[0] if matches else None
+
+    context = {
+        'Issue': Issue,
+        'project': project,
+        'deliverable': {
+            'id': deliverable.id,
+            'name': deliverable.name,
+            'description': deliverable.description,
+            'tasks': [task_to_dict(task, get_assignment(task), request.user) for task in deliverable.task_set.order_by('order')],
+            'issues': [issue_to_dict(issue, request.user) for issue in deliverable.issue_set.order_by('created')],
+        },
+    }
+
+    return render(request, 'implementation/project_deliverable.html', context)
+
+@login_required
 @csrf_exempt
 @require_http_methods(['POST'])
 def assignment_checked(request):
