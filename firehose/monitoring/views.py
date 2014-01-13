@@ -17,6 +17,7 @@
 # File contributors: David Arnold
 #
 from collections import defaultdict
+from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
@@ -182,7 +183,9 @@ def subscribe(request, project_id):
     if not ProjectSubscription.objects.filter(project=project, subscriber=request.user).exists():
         ProjectSubscription(project=project, subscriber=request.user).save()
 
-    return HttpResponseRedirect(reverse(dashboard, args=(project_id,)))
+    messages.success(request, 'You have been subscribed to email notifications for this project')
+
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @login_required
 @require_http_methods(['POST'])
@@ -191,4 +194,5 @@ def unsubscribe(request, project_id):
 
     ProjectSubscription.objects.filter(project=project, subscriber=request.user).delete()
 
-    return HttpResponseRedirect(reverse(dashboard, args=(project_id,)))
+    messages.success(request, 'You have been unsubscribed from this project')
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
